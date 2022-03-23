@@ -9,7 +9,7 @@ use Exception;
 
 class TaskManager extends ArrayObject
 {
-    protected Bus $bus;
+    protected ?Bus $bus = null;
     protected ArrayObject $failed;
     protected ArrayObject $overtimed;
 
@@ -17,7 +17,6 @@ class TaskManager extends ArrayObject
         protected string $name = 'default',
     )
     {
-        // $this->bus = new Bus();
         $this->failed = new ArrayObject();
         $this->overtimed = new ArrayObject();
 
@@ -73,5 +72,21 @@ class TaskManager extends ArrayObject
     public function getOvertimed(): ArrayObject
     {
         return $this->overtimed;
+    }
+
+    /**
+     * @return Bus
+     */
+    public function getBus(): Bus
+    {
+        return $this->bus ??= new Bus();
+    }
+
+    /**
+     * @param Bus $bus
+     */
+    public function setBus(Bus $bus): void
+    {
+        $this->bus = $bus;
     }
 }

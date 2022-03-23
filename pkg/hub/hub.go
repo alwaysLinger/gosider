@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"github.com/alwaysLinger/gosider/pkg/concrete"
 	"github.com/alwaysLinger/gosider/pkg/sinterface"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,8 +33,14 @@ func (h *Hub) recv() {
 		if err == bufio.ErrNegativeCount {
 			continue
 		}
+		// fmt.Println(len(payload))
+		// fmt.Println(payload)
 		t.Parse(payload)
 		h.stream.Read(t.Payload)
+		// f, err := os.OpenFile("ddd.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0777)
+		// f.WriteString(string(len(payload)) + "\n")
+		// f.WriteString(string(t.Msg) + "\n")
+		// f.WriteString(string(t.Payload))
 		t.TaskId = binary.BigEndian.Uint32(payload[0:4])
 		t.Msg = payload[8:]
 		go h.handleTask(t)
@@ -69,11 +76,11 @@ func (h *Hub) handleTask(t sinterface.ITask) {
 	}
 }
 
-func NewHub(th func(context.Context, []byte) ([]byte, error)) *Hub {
+func NewHub(r io.Reader, th func(context.Context, []byte) ([]byte, error)) *Hub {
 	// buf := bytes.NewBuffer([]byte{})
 	return &Hub{
 		// buf:    buf,
-		stream:  bufio.NewReader(os.Stdin),
+		stream:  bufio.NewReader(r),
 		ctx:     context.Background(),
 		th:      th,
 		resChan: make(chan sinterface.IResponse, 1),

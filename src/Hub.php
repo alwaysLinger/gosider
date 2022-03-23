@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Al\GoSider;
 
 use Closure;
+use Swoole\Coroutine;
+use Swoole\Coroutine\Channel;
 use Swoole\Coroutine\Server\Connection;
 use Swoole\Exception;
 use Swoole\Process;
@@ -13,20 +15,23 @@ use function Swoole\Coroutine\go;
 use Swoole\Coroutine\Server;
 use Swoole\Timer;
 
-class Hub
+class Hub implements Hubber
 {
     protected Process $process;
     protected Server $server;
     protected ?Closure $success = null;
     protected ?Closure $fail = null;
     protected ?Closure $time = null;
+    protected Buffer $buffer;
+    protected bool $running = true;
 
     public function __construct(
+        private string      $bin,
         private TaskManager $taskManager,
         private string      $host = '127.0.0.1',
         private int         $port = 9527,
         private bool        $daemon = false,
-        private float       $timeout = 0,
+        private float       $timeout = 1,
         private string      $siderName = 'gosider',
         private array       $protocols = [
             'open_length_check' => true,
@@ -37,15 +42,16 @@ class Hub
         ],
     )
     {
+        $this->buffer = new Buffer();
     }
 
-    private function daemon(): void
-    {
-        if (!$this->daemon) {
-            return;
-        }
-        Process::daemon();
-    }
+    // private function daemon(): void
+    // {
+    //     if (!$this->daemon) {
+    //         return;
+    //     }
+    //     Process::daemon();
+    // }
 
     private function execSider(): void
     {
@@ -53,7 +59,8 @@ class Hub
             $process->name($this->siderName);
             // $process->exec('/usr/local/bin/php', ['/Users/al/code/go/yolo/gosider/index.php']);
             // $process->exec('/usr/local/bin/php', ['/Users/al/code/go/yolo/gosider/sider.php']);
-            $process->exec('/Users/al/code/go/yolo/gosider/main');
+            // $process->exec('/Users/al/code/go/yolo/gosider/main', []);
+            $process->exec($this->bin, []);
         }, redirect_stdin_and_stdout: true, pipe_type: SOCK_STREAM);
     }
 
@@ -71,7 +78,7 @@ class Hub
         if (is_null($this->time)) {
             throw new Exception('fail callback not set');
         }
-        $this->daemon();
+        // $this->daemon();
         $this->execSider();
         $this->process->start();
         $this->dispatch();
@@ -81,10 +88,11 @@ class Hub
     {
         run(function () {
             $this->wait();
-            // dump($this->process->exportSocket()->setProtocol($this->protocols));
-            $this->process->exportSocket()->setProtocol($this->protocols);
-            go(fn() => $this->internalHub());
+            // $this->process->exportSocket()->setProtocol($this->protocols);
+            $chan = new Channel(0);
+            go(fn() => $this->internalHub($chan));
             go(fn() => $this->recv());
+            go(fn() => $this->taskManagerConnect($chan));
         });
     }
 
@@ -92,15 +100,18 @@ class Hub
     {
         Process::signal(SIGCHLD, function ($sig) {
             while ($ret = Process::wait(false)) {
-                echo "PID={$ret['pid']}\n";
+                // TODO
+                dump(sprintf('pid:%s wait success', $ret['pid']));
             }
+            $this->server->shutdown();
+            $this->running = false;
         });
     }
 
     /**
      * @throws Exception
      */
-    private function internalHub(): void
+    private function internalHub(Channel $chan): void
     {
         // dump('internalserver');
         $this->server = new Server(host: $this->host, port: $this->port);
@@ -108,7 +119,7 @@ class Hub
         $this->server->handle(function (Connection $conn) {
             // dump($conn->exportSocket()->getpeername());
             // dump($conn->exportSocket()->getsockname());
-            while (1) {
+            while ($this->running) {
                 $tasks = $conn->recv($this->timeout);
                 // dump('tasks:' . $tasks);
                 if ($tasks === false || $tasks === '') {
@@ -120,23 +131,33 @@ class Hub
                 $this->writeTasks($tasks);
             }
         });
+        $chan->push(Coroutine::getCid());
         $this->server->start();
+    }
+
+    private function taskManagerConnect(Channel $chan)
+    {
+        $scid = $chan->pop();
+        Timer::after(10, function () use ($scid) {
+            if (Coroutine::exists($scid)) {
+                $this->taskManager->setBus(new Bus());
+            }
+        });
     }
 
     private function recv(): void
     {
         dump('start recv...');
-        while (1) {
-            // dump('recv:' . $this->process->exportSocket()->recv());
-            // dump(get_class_methods($this->process->exportSocket()));
-            // dump($this->process->exportSocket()->getOption());
+        while ($this->running) {
             $resp = $this->process->exportSocket()->recv((int)$this->timeout);
             if ($resp === false) {
                 continue;
             }
-
-            dump('recv:' . $resp, strlen($resp));
-            $this->handleResp($resp);
+            $this->buffer->append($resp);
+            while ($msg = $this->buffer->getOne()) {
+                dump('recv:' . $msg, strlen($msg));
+                $this->handleResp($resp);
+            }
         }
     }
 
@@ -165,4 +186,5 @@ class Hub
         // TODO
         call_user_func($this->success, new Response($resp), $this->taskManager);
     }
+
 }

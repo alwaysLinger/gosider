@@ -42,7 +42,7 @@ class Bus extends ArrayObject
         // $res = stream_socket_sendto($this->client, $data . $data);
 
         // dump($res);
-        // dump($tasks, strlen($tasks));
+        dump($tasks, strlen($tasks));
         $this->exchangeArray([]);
     }
 }

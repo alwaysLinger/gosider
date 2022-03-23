@@ -31,16 +31,21 @@ func (t task) Handle(ctx context.Context) (sinterface.IResponse, error) {
 
 func (t *task) wrapHandle(ctx context.Context) <-chan struct{} {
 	c := make(chan struct{})
-	ret, err := t.onTask(ctx, t.Payload)
-	if err != nil {
-		t.err = err
-	} else {
-		resp := make([]byte, 8+len(ret))
-		binary.BigEndian.PutUint32(resp[0:4], t.TaskId)
-		binary.BigEndian.PutUint32(resp[4:8], uint32(len(ret)))
-		resp = append(resp[0:8], ret...)
-		t.res = NewResponse(resp)
-	}
+	go func() {
+		ret, err := t.onTask(ctx, t.Payload)
+		if err != nil {
+			t.err = err
+		} else {
+			defer func() {
+				c <- struct{}{}
+			}()
+			resp := make([]byte, 8+len(ret))
+			binary.BigEndian.PutUint32(resp[0:4], t.TaskId)
+			binary.BigEndian.PutUint32(resp[4:8], uint32(len(ret)))
+			resp = append(resp[0:8], ret...)
+			t.res = NewResponse(resp)
+		}
+	}()
 	return c
 }
 
