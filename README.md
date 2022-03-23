@@ -79,3 +79,7 @@ func main() {
 	h.Start()
 }
 ```
+```shell
+php main.php --bin /path/to/your/goexecfile
+php client.php
+```
