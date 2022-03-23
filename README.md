@@ -39,11 +39,12 @@ $hm->start();
 
 ```
 
-###some code that may be get blocked in swoole, just use Task class it make unblock
+### 
 
 ```php
 <?php
-
+# some code that may be got blocked in swoole,
+# just use Task class it make unblocked
 require 'vendor/autoload.php';
 
 use Al\GoSider\Bus;
