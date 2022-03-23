@@ -39,7 +39,7 @@ $hm->start();
 
 ```
 
-###  
+###some code that may be get blocked in swoole, just use Task class it make unblock
 
 ```php
 <?php
