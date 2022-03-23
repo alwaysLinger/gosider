@@ -1,0 +1,25 @@
+{
+  "name": "yylh/gosider",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "al",
+      "email": "alwayslinger@163.com"
+    }
+  ],
+  "require": {
+    "php": ">=8.0",
+    "ext-swoole": ">=4.8",
+    "ext-sockets": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Al\\GoSider\\": "src/"
+    }
+  },
+  "require-dev": {
+    "symfony/var-dumper": "^6.0",
+    "swoole/ide-helper": "^4.8"
+  }
+}
