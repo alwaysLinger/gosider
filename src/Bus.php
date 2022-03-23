@@ -37,12 +37,7 @@ class Bus extends ArrayObject
             throw new Exception('got no tasks');
         }
         $tasks = implode('', (array)$this);
-        $res = stream_socket_sendto($this->client, $tasks);
-        // $data = pack('NN', 123, strlen('hello')) . 'hello';
-        // $res = stream_socket_sendto($this->client, $data . $data);
-
-        // dump($res);
-        dump($tasks, strlen($tasks));
+        stream_socket_sendto($this->client, $tasks);
         $this->exchangeArray([]);
     }
 }

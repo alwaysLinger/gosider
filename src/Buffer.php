@@ -23,7 +23,9 @@ class Buffer
         if (strlen($this->buf) < 8 + $msgLen) {
             return false;
         }
+
         $msg = substr($this->buf, 0, 8 + $msgLen);
+
         $this->setBuf(substr($this->buf, 8 + $msgLen));
         return $msg;
     }

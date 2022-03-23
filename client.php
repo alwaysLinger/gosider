@@ -2,15 +2,8 @@
 
 require 'vendor/autoload.php';
 
-use function Swoole\Coroutine\run;
-use function Swoole\Coroutine\go;
-use Al\GoSider\TaskManager;
 use Al\GoSider\Bus;
 use Al\GoSider\Task;
-
-// run(function () {
-//
-// });
 
 $t1 = new Task(1111, 'aaaa');
 $t2 = new Task(2222, 'bbbb');

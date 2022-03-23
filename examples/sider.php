@@ -22,6 +22,4 @@ run(function () {
             fflush(STDOUT);
         }
     });
-    // go(function () {
-    // });
 });

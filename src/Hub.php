@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace Al\GoSider;
 
 use Closure;
-use Swoole\Coroutine;
-use Swoole\Coroutine\Channel;
+use Swoole\Coroutine\Server;
 use Swoole\Coroutine\Server\Connection;
 use Swoole\Exception;
 use Swoole\Process;
-use function Swoole\Coroutine\run;
 use function Swoole\Coroutine\go;
-use Swoole\Coroutine\Server;
-use Swoole\Timer;
+use function Swoole\Coroutine\run;
 
 class Hub implements Hubber
 {
@@ -30,7 +27,6 @@ class Hub implements Hubber
         private TaskManager $taskManager,
         private string      $host = '127.0.0.1',
         private int         $port = 9527,
-        private bool        $daemon = false,
         private float       $timeout = 1,
         private string      $siderName = 'gosider',
         private array       $protocols = [
@@ -45,21 +41,10 @@ class Hub implements Hubber
         $this->buffer = new Buffer();
     }
 
-    // private function daemon(): void
-    // {
-    //     if (!$this->daemon) {
-    //         return;
-    //     }
-    //     Process::daemon();
-    // }
-
     private function execSider(): void
     {
         $this->process = new Process(callback: function (Process $process) {
             $process->name($this->siderName);
-            // $process->exec('/usr/local/bin/php', ['/Users/al/code/go/yolo/gosider/index.php']);
-            // $process->exec('/usr/local/bin/php', ['/Users/al/code/go/yolo/gosider/sider.php']);
-            // $process->exec('/Users/al/code/go/yolo/gosider/main', []);
             $process->exec($this->bin, []);
         }, redirect_stdin_and_stdout: true, pipe_type: SOCK_STREAM);
     }
@@ -78,7 +63,6 @@ class Hub implements Hubber
         if (is_null($this->time)) {
             throw new Exception('fail callback not set');
         }
-        // $this->daemon();
         $this->execSider();
         $this->process->start();
         $this->dispatch();
@@ -88,11 +72,10 @@ class Hub implements Hubber
     {
         run(function () {
             $this->wait();
+            // got no idea why this socket protocol setting does not work, so implement one
             // $this->process->exportSocket()->setProtocol($this->protocols);
-            $chan = new Channel(0);
-            go(fn() => $this->internalHub($chan));
+            go(fn() => $this->internalHub());
             go(fn() => $this->recv());
-            go(fn() => $this->taskManagerConnect($chan));
         });
     }
 
@@ -111,43 +94,25 @@ class Hub implements Hubber
     /**
      * @throws Exception
      */
-    private function internalHub(Channel $chan): void
+    private function internalHub(): void
     {
-        // dump('internalserver');
         $this->server = new Server(host: $this->host, port: $this->port);
         $this->server->set($this->protocols);
         $this->server->handle(function (Connection $conn) {
-            // dump($conn->exportSocket()->getpeername());
-            // dump($conn->exportSocket()->getsockname());
             while ($this->running) {
                 $tasks = $conn->recv($this->timeout);
-                // dump('tasks:' . $tasks);
                 if ($tasks === false || $tasks === '') {
                     $conn->close();
                     break;
                 }
-                // dump(strlen($tasks));
-                // dump(unpack('N', substr($tasks, 0, 4))[1], substr($tasks, 8));
                 $this->writeTasks($tasks);
             }
         });
-        $chan->push(Coroutine::getCid());
         $this->server->start();
-    }
-
-    private function taskManagerConnect(Channel $chan)
-    {
-        $scid = $chan->pop();
-        Timer::after(10, function () use ($scid) {
-            if (Coroutine::exists($scid)) {
-                $this->taskManager->setBus(new Bus());
-            }
-        });
     }
 
     private function recv(): void
     {
-        dump('start recv...');
         while ($this->running) {
             $resp = $this->process->exportSocket()->recv((int)$this->timeout);
             if ($resp === false) {
@@ -155,8 +120,7 @@ class Hub implements Hubber
             }
             $this->buffer->append($resp);
             while ($msg = $this->buffer->getOne()) {
-                dump('recv:' . $msg, strlen($msg));
-                $this->handleResp($resp);
+                $this->handleResp($msg);
             }
         }
     }

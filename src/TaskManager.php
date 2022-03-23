@@ -43,7 +43,7 @@ class TaskManager extends ArrayObject
 
     private function exchangeTasks(ArrayObject $tasks): self
     {
-        $this->bus->exchangeArray($tasks);
+        $this->getBus()->exchangeArray($tasks);
         return $this;
     }
 
@@ -52,10 +52,10 @@ class TaskManager extends ArrayObject
      */
     public function send(): void
     {
-        if (count($this->bus) === 0) {
+        if (count($this->getBus()) === 0) {
             $this->exchangeTasks($this);
         }
-        $this->bus->send();
+        $this->getBus()->send();
     }
 
     /**
@@ -77,7 +77,7 @@ class TaskManager extends ArrayObject
     /**
      * @return Bus
      */
-    public function getBus(): Bus
+    private function getBus(): Bus
     {
         return $this->bus ??= new Bus();
     }
