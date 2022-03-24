@@ -40,4 +40,11 @@ class Bus extends ArrayObject
         stream_socket_sendto($this->client, $tasks);
         $this->exchangeArray([]);
     }
+
+    public function __destruct()
+    {
+        if (is_resource($this->client)) {
+            @fclose($this->client);
+        }
+    }
 }
