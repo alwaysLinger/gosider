@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Al\GoSider;
 
 use Closure;
+use Swoole\Coroutine\Channel;
 use Swoole\Coroutine\Server;
 use Swoole\Coroutine\Server\Connection;
 use Swoole\Exception;
@@ -20,7 +21,6 @@ class Hub implements Hubber
     protected ?Closure $fail = null;
     protected ?Closure $time = null;
     protected Buffer $buffer;
-    protected bool $running = true;
 
     public function __construct(
         private string      $bin,
@@ -38,7 +38,6 @@ class Hub implements Hubber
         ],
     )
     {
-        $this->buffer = new Buffer();
     }
 
     private function execSider(): void
@@ -63,6 +62,8 @@ class Hub implements Hubber
         if (is_null($this->time)) {
             throw new Exception('fail callback not set');
         }
+
+        $this->buffer = new Buffer();
         $this->execSider();
         $this->process->start();
         $this->dispatch();
@@ -71,23 +72,23 @@ class Hub implements Hubber
     private function dispatch(): void
     {
         run(function () {
-            $this->wait();
+            $stopChan = new Channel();
+            $this->wait($stopChan);
             // got no idea why this socket protocol setting does not work, so implement one
             // $this->process->exportSocket()->setProtocol($this->protocols);
             go(fn() => $this->internalHub());
             go(fn() => $this->recv());
+            go(fn() => $this->ctrl($stopChan));
         });
     }
 
-    private function wait(): void
+    private function wait(Channel $stopChan): void
     {
-        Process::signal(SIGCHLD, function ($sig) {
-            while ($ret = Process::wait(false)) {
-                // TODO
-                dump(sprintf('pid:%s wait success', $ret['pid']));
-            }
-            $this->server->shutdown();
-            $this->running = false;
+        Process::signal(SIGCHLD, function ($sig) use ($stopChan) {
+            $ret = Process::wait(false);
+            // TODO
+            // dump(sprintf('pid:%s wait success', $ret['pid']));
+            $stopChan->push(1);
         });
     }
 
@@ -99,7 +100,7 @@ class Hub implements Hubber
         $this->server = new Server(host: $this->host, port: $this->port);
         $this->server->set($this->protocols);
         $this->server->handle(function (Connection $conn) {
-            while ($this->running) {
+            while (1) {
                 $tasks = $conn->recv($this->timeout);
                 if ($tasks === false || $tasks === '') {
                     $conn->close();
@@ -113,16 +114,23 @@ class Hub implements Hubber
 
     private function recv(): void
     {
-        while ($this->running) {
+        while (1) {
             $resp = $this->process->exportSocket()->recv((int)$this->timeout);
             if ($resp === false) {
-                continue;
+                break;
             }
             $this->buffer->append($resp);
             while ($msg = $this->buffer->getOne()) {
                 $this->handleResp($msg);
             }
         }
+    }
+
+    private function ctrl(Channel $stopChan)
+    {
+        $stopChan->pop();
+        $this->server->shutdown();
+        $this->process->exportSocket()->close();
     }
 
     public function onSuccess(Closure $cb): void
@@ -150,5 +158,4 @@ class Hub implements Hubber
         // TODO
         call_user_func($this->success, new Response($resp), $this->taskManager);
     }
-
 }
