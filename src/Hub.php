@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Al\GoSider;
 
 use Closure;
+use Swoole\Coroutine;
 use Swoole\Coroutine\Channel;
 use Swoole\Coroutine\Server;
 use Swoole\Coroutine\Server\Connection;
@@ -71,6 +72,7 @@ class Hub implements Hubber
 
     private function dispatch(): void
     {
+        Coroutine::set(['hook_flags' => SWOOLE_HOOK_ALL]);
         run(function () {
             $stopChan = new Channel();
             $this->wait($stopChan);
