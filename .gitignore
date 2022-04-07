@@ -2,3 +2,4 @@
 vendor
 composer.lock
 go.sum
+.DS_Store

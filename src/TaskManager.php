@@ -9,6 +9,8 @@ use Exception;
 
 class TaskManager extends ArrayObject
 {
+    use ValidTask;
+
     protected ?Bus $bus = null;
     protected ArrayObject $failed;
     protected ArrayObject $overtimed;
@@ -18,7 +20,7 @@ class TaskManager extends ArrayObject
     )
     {
         $this->failed = new ArrayObject();
-        $this->overtimed = new ArrayObject();
+        $this->overtimed = clone $this->failed;
 
         parent::__construct();
     }

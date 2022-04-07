@@ -9,6 +9,8 @@ use Exception;
 
 class Bus extends ArrayObject
 {
+    use ValidTask;
+
     /**
      * @var false|resource
      */

@@ -77,3 +77,7 @@ func NewHub(r io.Reader, th func(context.Context, []byte) ([]byte, error)) *Hub 
 		resChan: make(chan sinterface.IResponse, 1),
 	}
 }
+
+func DefaultHub(th func(context.Context, []byte) ([]byte, error)) *Hub {
+	return NewHub(os.Stdin, th)
+}
