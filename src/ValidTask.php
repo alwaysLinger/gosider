@@ -14,7 +14,7 @@ trait ValidTask
      */
     public function offsetSet($key, $value)
     {
-        if (!is_string($key)) {
+        if (!is_int($key)) {
             throw new InvalidArgumentException("task_id must be a string value");
         }
 
