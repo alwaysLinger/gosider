@@ -5,24 +5,58 @@ import (
 	"context"
 	"encoding/binary"
 	"github.com/alwaysLinger/gosider/pkg/concrete"
-	"github.com/alwaysLinger/gosider/pkg/sinterface"
-	"io"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/alwaysLinger/gosider/pkg/sinterface"
 )
+
+type hubOptions struct {
+	stream  *bufio.Reader
+	ctx     context.Context
+	th      func(context.Context, interface{}) (interface{}, error)
+	resChan chan sinterface.IResponse
+	proto   bool
+}
+
+var defaultHubOptions = hubOptions{
+	stream:  bufio.NewReader(os.Stdin),
+	ctx:     context.Background(),
+	resChan: make(chan sinterface.IResponse, 1),
+	proto:   true,
+}
+
+type HubOption interface {
+	apply(*hubOptions)
+}
+
+type funcHubOption struct {
+	f func(options *hubOptions)
+}
+
+func (fdo *funcHubOption) apply(do *hubOptions) {
+	fdo.f(do)
+}
+
+func newFuncHubOption(f func(options *hubOptions)) *funcHubOption {
+	return &funcHubOption{
+		f: f,
+	}
+}
 
 type Hub struct {
 	stream  *bufio.Reader
 	ctx     context.Context
 	resChan chan sinterface.IResponse
-	th      func(context.Context, []byte) ([]byte, error)
+	th      func(context.Context, interface{}) (interface{}, error)
+	proto   bool
 }
 
 func (h *Hub) recv() {
 	for {
-		t := concrete.NewTask(h.th)
+		t := concrete.NewTask(h.th, h.proto)
 		head, err := h.stream.Peek(8)
 		if err == bufio.ErrNegativeCount {
 			continue
@@ -34,15 +68,18 @@ func (h *Hub) recv() {
 		}
 		t.Parse(payload)
 		h.stream.Read(t.Payload)
+
+		// ioutil.WriteFile("/Users/al/code/go/yolo/gosider/debug.txt", t.Payload, 0644)
+
 		t.TaskId = binary.BigEndian.Uint32(payload[0:4])
-		t.Msg = payload[8:]
+		copy(t.Msg, payload[8:])
 		go h.handleTask(t)
 	}
 }
 
 func (h *Hub) Start() {
 	if h.th == nil {
-		os.Exit(-1)
+		panic("set recv handler first")
 	}
 	go h.recv()
 	go h.response()
@@ -69,15 +106,46 @@ func (h *Hub) handleTask(t sinterface.ITask) {
 	}
 }
 
-func NewHub(r io.Reader, th func(context.Context, []byte) ([]byte, error)) *Hub {
+func NewHub(th func(context.Context, interface{}) (interface{}, error), opt ...HubOption) *Hub {
+	opts := defaultHubOptions
+	for _, o := range opt {
+		o.apply(&opts)
+	}
 	return &Hub{
-		stream:  bufio.NewReader(r),
-		ctx:     context.Background(),
+		stream:  opts.stream,
+		ctx:     opts.ctx,
 		th:      th,
-		resChan: make(chan sinterface.IResponse, 1),
+		resChan: opts.resChan,
+		proto:   opts.proto,
 	}
 }
 
-func DefaultHub(th func(context.Context, []byte) ([]byte, error)) *Hub {
-	return NewHub(os.Stdin, th)
+func CustomHubStream(s *bufio.Reader) HubOption {
+	return newFuncHubOption(func(options *hubOptions) {
+		options.stream = s
+	})
+}
+
+func CustomHubCtx(ctx context.Context) HubOption {
+	return newFuncHubOption(func(options *hubOptions) {
+		options.ctx = ctx
+	})
+}
+
+func CustomHubTh(th func(context.Context, interface{}) (interface{}, error)) HubOption {
+	return newFuncHubOption(func(options *hubOptions) {
+		options.th = th
+	})
+}
+
+func CustomHubReschan(ch chan sinterface.IResponse) HubOption {
+	return newFuncHubOption(func(options *hubOptions) {
+		options.resChan = ch
+	})
+}
+
+func CustomHubProto(t bool) HubOption {
+	return newFuncHubOption(func(options *hubOptions) {
+		options.proto = t
+	})
 }

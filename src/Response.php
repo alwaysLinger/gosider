@@ -4,37 +4,32 @@ declare(strict_types=1);
 
 namespace Al\GoSider;
 
+use Al\GoSider\Concracts\Packer;
+use Google\Protobuf\Internal\Message;
+
 class Response
 {
-    protected array $resp;
+    protected array|Message $resp;
 
     public function __construct(
         protected string $raw,
+        protected Packer $packer,
     )
     {
-        $this->resp = $this->paseResp($this->raw);
+        $this->resp = $this->parseResp($this->raw);
     }
 
-    /**
-     * @return string
-     */
     public function getRaw(): string
     {
         return $this->raw;
     }
 
-    private function paseResp(string $raw): array
+    private function parseResp(string $raw): array|Message
     {
-        $msg['id'] = unpack('N', substr($raw, 0, 4))[1];
-        $msg['len'] = unpack('N', substr($raw, 4, 8))[1];
-        $msg['resp'] = substr($raw, 8);
-        return $msg;
+        return $this->packer->deserializeReply($raw);
     }
 
-    /**
-     * @return array
-     */
-    public function getResp(): array
+    public function getResp(): array|Message
     {
         return $this->resp;
     }

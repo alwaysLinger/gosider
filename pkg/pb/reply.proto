@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/alwaysLinger/gosider/pkg/pb";
+
+message Reply {
+  uint32 task_id = 1;
+  uint32 status = 2;
+  bytes response = 3;
+  bytes context = 4;
+}
+// protoc -I=./ --go_out=./ --go_opt=module=github.com/alwaysLinger/gosider/pkg/pb *.proto

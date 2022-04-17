@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package messages;
+
+message Reply {
+  uint32 task_id = 1;
+  uint32 status = 2;
+  bytes response = 3;
+  bytes context = 4;
+}
+//    protoc -I=./ --php_out=./ *.proto

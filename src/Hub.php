@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Al\GoSider;
 
+use Al\GoSider\Concracts\Hubber;
+use Al\GoSider\Concracts\Packer;
+use Al\GoSider\Packers\ProtobufPacker;
 use Closure;
+use Exception;
 use Swoole\Coroutine;
 use Swoole\Coroutine\Channel;
 use Swoole\Coroutine\Server;
 use Swoole\Coroutine\Server\Connection;
-use Swoole\Exception;
 use Swoole\Process;
 use function Swoole\Coroutine\go;
 use function Swoole\Coroutine\run;
@@ -22,6 +25,8 @@ class Hub implements Hubber
     protected ?Closure $fail = null;
     protected ?Closure $time = null;
     protected Buffer $buffer;
+    protected array $settings;
+    protected Packer $packer;
 
     public function __construct(
         private string      $bin,
@@ -52,19 +57,23 @@ class Hub implements Hubber
     /**
      * @throws Exception
      */
-    public function start(): void
+    public function start(array $settings): void
     {
         if (is_null($this->success)) {
-            throw new Exception('recv callback not set');
+            $this->throwException('recv callback not set');
         }
         if (is_null($this->fail)) {
-            throw new Exception('fail callback not set');
+            $this->throwException('fail callback not set');
         }
         if (is_null($this->time)) {
-            throw new Exception('fail callback not set');
+            $this->throwException('fail callback not set');
         }
 
-        $this->buffer = new Buffer();
+        $settings['packer'] ??= ProtobufPacker::class;
+
+        $this->settings = $settings;
+        $this->packer = $settings['packer']::getInstance();
+        $this->buffer = new Buffer(packer: $this->packer);
         $this->execSider();
         $this->process->start();
         $this->dispatch();
@@ -157,7 +166,14 @@ class Hub implements Hubber
 
     private function handleResp(string $resp): void
     {
-        // TODO
-        call_user_func($this->success, new Response($resp), $this->taskManager);
+        call_user_func($this->success, new Response(raw: $resp, packer: $this->packer), $this->taskManager);
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function throwException(string $message)
+    {
+        throw new Exception($message);
     }
 }

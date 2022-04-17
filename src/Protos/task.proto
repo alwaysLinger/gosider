@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package messages;
+
+message Task {
+  uint32 task_id = 1;
+  bytes task = 2;
+  bytes context = 3;
+}

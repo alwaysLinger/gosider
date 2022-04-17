@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Al\GoSider;
 
+use Al\GoSider\Concracts\Hubber;
 use Swoole\Process\Pool;
 
 class HubManager
@@ -12,6 +13,7 @@ class HubManager
 
     public function __construct(
         private Hubber $hub,
+        private array  $settings = [],
     )
     {
         $this->pool = new Pool(1);
@@ -19,7 +21,7 @@ class HubManager
 
     public function start()
     {
-        $this->pool->on('WorkerStart', fn() => $this->hub->start());
+        $this->pool->on('WorkerStart', fn() => $this->hub->start($this->settings));
         $this->pool->start();
     }
 }

@@ -4,9 +4,20 @@ declare(strict_types=1);
 
 namespace Al\GoSider;
 
+use Al\GoSider\Concracts\Packer;
+use Messages\Reply;
+
 class Buffer
 {
     protected string $buf = '';
+    protected int $headLen = 0;
+
+    public function __construct(
+        protected Packer $packer,
+    )
+    {
+        $this->headLen = get_class($this->packer)::HEADLEN;
+    }
 
     public function append(string $res): void
     {
@@ -15,23 +26,34 @@ class Buffer
 
     public function getOne(): string|bool
     {
-        if (strlen($this->buf) <= 8) {
+        if (!$this->atleastOne()) {
             return false;
         }
 
-        $msgLen = unpack('N', substr($this->buf, 4, 8))[1];
-        if (strlen($this->buf) < 8 + $msgLen) {
+        $msgLen = $this->packer->unpack($this->buf);
+
+        if (!$this->hasOne($msgLen)) {
             return false;
         }
 
-        $msg = substr($this->buf, 0, 8 + $msgLen);
+        $msg = substr($this->buf, 8, $msgLen);
+        $this->setBuf(substr($this->buf, $this->headLen + $msgLen));
 
-        $this->setBuf(substr($this->buf, 8 + $msgLen));
         return $msg;
     }
 
     public function setBuf(string $buf): void
     {
         $this->buf = $buf;
+    }
+
+    private function atleastOne(): bool
+    {
+        return strlen($this->buf) > $this->headLen;
+    }
+
+    private function hasOne(int $msgLen): bool
+    {
+        return strlen($this->buf) >= $this->headLen + $msgLen;
     }
 }
