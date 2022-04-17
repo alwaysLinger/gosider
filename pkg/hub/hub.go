@@ -19,6 +19,8 @@ type hubOptions struct {
 	th      func(context.Context, interface{}) (interface{}, error)
 	resChan chan sinterface.IResponse
 	proto   bool
+	task    func([]byte) (interface{}, error)
+	reply   func(interface{}) ([]byte, error)
 }
 
 var defaultHubOptions = hubOptions{
@@ -26,6 +28,8 @@ var defaultHubOptions = hubOptions{
 	ctx:     context.Background(),
 	resChan: make(chan sinterface.IResponse, 1),
 	proto:   true,
+	task:    nil,
+	reply:   nil,
 }
 
 type HubOption interface {
@@ -52,11 +56,13 @@ type Hub struct {
 	resChan chan sinterface.IResponse
 	th      func(context.Context, interface{}) (interface{}, error)
 	proto   bool
+	task    func([]byte) (interface{}, error)
+	reply   func(interface{}) ([]byte, error)
 }
 
 func (h *Hub) recv() {
 	for {
-		t := concrete.NewTask(h.th, h.proto)
+		t := concrete.NewTask(h.th, h.proto, h.task, h.reply)
 		head, err := h.stream.Peek(8)
 		if err == bufio.ErrNegativeCount {
 			continue
@@ -114,6 +120,8 @@ func NewHub(th func(context.Context, interface{}) (interface{}, error), opt ...H
 		th:      th,
 		resChan: opts.resChan,
 		proto:   opts.proto,
+		task:    opts.task,
+		reply:   opts.reply,
 	}
 }
 
@@ -144,5 +152,17 @@ func CustomHubReschan(ch chan sinterface.IResponse) HubOption {
 func CustomHubProto(t bool) HubOption {
 	return newFuncHubOption(func(options *hubOptions) {
 		options.proto = t
+	})
+}
+
+func CustomHubTaskHandle(h func([]byte) (interface{}, error)) HubOption {
+	return newFuncHubOption(func(options *hubOptions) {
+		options.task = h
+	})
+}
+
+func CustomHubReplyHandle(h func(interface{}) ([]byte, error)) HubOption {
+	return newFuncHubOption(func(options *hubOptions) {
+		options.reply = h
 	})
 }
