@@ -7,13 +7,13 @@ namespace Al\GoSider\Packers;
 use Al\GoSider\Concracts\Packer;
 use Al\GoSider\Singleton;
 use Closure;
+use Exception;
 use Google\Protobuf\Internal\Message;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Messages\Reply;
 use Messages\Task;
-use Exception;
 
 class ProtobufPacker implements Packer
 {
@@ -37,6 +37,7 @@ class ProtobufPacker implements Packer
             throw new InvalidArgumentException('a task payload must be an associative array');
         }
         $message = $this->serializeTask($task);
+        
         return pack('NN', $task['task_id'], strlen($message)) . $message;
     }
 

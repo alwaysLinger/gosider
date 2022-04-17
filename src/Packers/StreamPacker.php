@@ -17,6 +17,7 @@ class StreamPacker implements Packer
     public function pack($task): string
     {
         $task = $this->serializeTask($task);
+
         return pack('NN', $task['task_id'], strlen($task)) . $task;
     }
 
@@ -37,6 +38,7 @@ class StreamPacker implements Packer
             unpack('N', substr($raw, 4, 8))[1],
             substr($raw, 8)
         ];
+
         return $msg;
     }
 }

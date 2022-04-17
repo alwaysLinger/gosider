@@ -3,10 +3,11 @@ package concrete
 import (
 	"context"
 	"encoding/binary"
+
 	"github.com/alwaysLinger/gosider/pkg/pb"
 	"github.com/alwaysLinger/gosider/pkg/sinterface"
+
 	"google.golang.org/protobuf/proto"
-	"io/ioutil"
 )
 
 type task struct {
@@ -56,7 +57,6 @@ func (t *task) wrapHandle(ctx context.Context) <-chan struct{} {
 			var rep []byte
 			if _, ok := ret.([]byte); !ok {
 				rep, _ = proto.Marshal(ret.(*pb.Reply))
-				ioutil.WriteFile("/Users/al/code/go/yolo/gosider/debug.txt", rep, 0644)
 			} else {
 				rep = ret.([]byte)
 			}

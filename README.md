@@ -7,7 +7,7 @@
 ```php
 <?php
 
-require 'vendor/autoload.php';
+include "vendor/autoload.php";
 
 use Al\GoSider\HubManager;
 use Al\GoSider\Hub;
@@ -20,8 +20,21 @@ $h = new Hub(
     taskManager: new TaskManager(),
 );
 $h->onSuccess(function (Response $resp, TaskManager $taskManager) {
-    dump($resp->getResp());
-    // $taskManager['test'] = new Task(6666, 'asddfgdfg');
+    /** @var \Messages\Reply $reply */
+    $reply = $resp->getResp();
+    dump(json_decode($reply->getContext(), true));
+    dump($reply->getTaskId());
+    dump(json_decode($reply->getResponse(), true));
+    // $taskManager[12345] = new Task(6666, [
+    //     'task' => [
+    //         'a' => 'swoole',
+    //         'b' => 'world',
+    //     ],
+    //     'context' => [
+    //         'c' => 'golang',
+    //         'd' => 'world',
+    //     ],
+    // ]);;
     // $taskManager->send();
 });
 // TODO
@@ -43,21 +56,37 @@ $hm->start();
 
 ```php
 <?php
+
 # some code that may be got blocked in swoole,
-# make it unblocked with task class
+# just use Task class it make unblocked
 require 'vendor/autoload.php';
 
 use Al\GoSider\Bus;
 use Al\GoSider\Task;
 
-$t1 = new Task(1111, 'aaaa');
-$t2 = new Task(2222, 'bbbb');
-$t3 = new Task(3333, 'cccc');
-$t4 = new Task(4444, 'dddd');
+$t1 = new Task(1111, [
+    'task' => [
+        'a' => '中国',
+        'b' => 'world',
+    ],
+    'context' => [
+        'c' => '中国',
+        'd' => 'world',
+    ],
+]);
+$t2 = new Task(2222, [
+    'task' => [
+        'a' => '中国',
+        'b' => 'world',
+    ],
+    'context' => [
+        'c' => '中国',
+        'd' => 'world',
+    ],
+]);
 
-$bus = new Bus(compact('t1', 't2', 't3', 't4'));
+$bus = new Bus(compact('t1', 't2'));
 $bus->send();
-
 
 ```
 
@@ -68,16 +97,45 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/alwaysLinger/gosider/pkg/hub"
+	"github.com/alwaysLinger/gosider/pkg/pb"
 )
 
 func main() {
-	h := hub.DefaultHub(func(ctx context.Context, bytes []byte) ([]byte, error) {
-		return []byte{'a', 'b', 'c'}, nil
+	h := hub.NewHub(func(ctx context.Context, req interface{}) (interface{}, error) {
+		task, _ := req.(*pb.Task)
+
+		return &pb.Reply{
+			TaskId:   task.GetTaskId(),
+			Status:   123,
+			Response: jsonResp(),
+			Context:  task.GetContext(),
+		}, nil
 	})
 
 	h.Start()
 }
+
+type resp struct {
+	FieldA string `json:"field_a"`
+	FieldB string `json:"field_b"`
+	FieldC string `json:"field_c"`
+}
+
+func jsonResp() []byte {
+
+	marshal, err := json.Marshal(resp{
+		FieldA: "hello",
+		FieldB: "swoole",
+		FieldC: "golang",
+	})
+	if err != nil {
+		return nil
+	}
+	return marshal
+}
+
 ```
 ```shell
 php main.php --bin /path/to/your/goexecfile

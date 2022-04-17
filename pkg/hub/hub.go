@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"context"
 	"encoding/binary"
-	"github.com/alwaysLinger/gosider/pkg/concrete"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/alwaysLinger/gosider/pkg/concrete"
 	"github.com/alwaysLinger/gosider/pkg/sinterface"
 )
 
@@ -68,9 +68,6 @@ func (h *Hub) recv() {
 		}
 		t.Parse(payload)
 		h.stream.Read(t.Payload)
-
-		// ioutil.WriteFile("/Users/al/code/go/yolo/gosider/debug.txt", t.Payload, 0644)
-
 		t.TaskId = binary.BigEndian.Uint32(payload[0:4])
 		copy(t.Msg, payload[8:])
 		go h.handleTask(t)
