@@ -98,6 +98,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	
 	"github.com/alwaysLinger/gosider/pkg/hub"
 	"github.com/alwaysLinger/gosider/pkg/pb"
 )
@@ -139,5 +140,5 @@ func jsonResp() []byte {
 ```
 ```shell
 php main.php --bin /path/to/your/goexecfile
-php client.php
+php task.php
 ```
