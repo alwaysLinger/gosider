@@ -1,6 +1,6 @@
-## swoole and golang ipc demo
+## swoole and golang ipc tool
 
-## swoole process module exec go excutable file as sider car, use goroutine complete swoole coroutine
+## swoole process module run go process as a sider car, use goroutine complete swoole coroutine in some cases
 
 ### hub.php
 
