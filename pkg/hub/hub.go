@@ -11,6 +11,8 @@ import (
 
 	"github.com/alwaysLinger/gosider/pkg/concrete"
 	"github.com/alwaysLinger/gosider/pkg/sinterface"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type hubOptions struct {
@@ -19,8 +21,8 @@ type hubOptions struct {
 	th      func(context.Context, interface{}) (interface{}, error)
 	resChan chan sinterface.IResponse
 	proto   bool
-	task    func([]byte) (interface{}, error)
-	reply   func(interface{}) ([]byte, error)
+	task    func([]byte) (proto.Message, error)
+	reply   func(message proto.Message) ([]byte, error)
 }
 
 var defaultHubOptions = hubOptions{
@@ -56,8 +58,8 @@ type Hub struct {
 	resChan chan sinterface.IResponse
 	th      func(context.Context, interface{}) (interface{}, error)
 	proto   bool
-	task    func([]byte) (interface{}, error)
-	reply   func(interface{}) ([]byte, error)
+	task    func([]byte) (proto.Message, error)
+	reply   func(proto.Message) ([]byte, error)
 }
 
 func (h *Hub) recv() {
@@ -155,13 +157,13 @@ func CustomHubProto(t bool) HubOption {
 	})
 }
 
-func CustomHubTaskHandle(h func([]byte) (interface{}, error)) HubOption {
+func CustomHubTaskHandle(h func([]byte) (proto.Message, error)) HubOption {
 	return newFuncHubOption(func(options *hubOptions) {
 		options.task = h
 	})
 }
 
-func CustomHubReplyHandle(h func(interface{}) ([]byte, error)) HubOption {
+func CustomHubReplyHandle(h func(proto.Message) ([]byte, error)) HubOption {
 	return newFuncHubOption(func(options *hubOptions) {
 		options.reply = h
 	})

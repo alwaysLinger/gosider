@@ -19,8 +19,8 @@ type task struct {
 	res     sinterface.IResponse
 	err     error
 	proto   bool
-	th      func([]byte) (interface{}, error)
-	rh      func(interface{}) ([]byte, error)
+	th      func([]byte) (proto.Message, error)
+	rh      func(proto.Message) ([]byte, error)
 }
 
 func (t *task) Parse(p []byte) {
@@ -48,8 +48,7 @@ func (t *task) wrapHandle(ctx context.Context) <-chan struct{} {
 				proto.Unmarshal(t.Msg, &req)
 				p = &req
 			} else {
-				req, _ := t.th(t.Msg)
-				p = req
+				p, _ = t.th(t.Msg)
 			}
 		}
 
@@ -66,7 +65,7 @@ func (t *task) wrapHandle(ctx context.Context) <-chan struct{} {
 				if t.rh == nil {
 					rep, _ = proto.Marshal(ret.(*pb.Reply))
 				} else {
-					rep, _ = t.rh(ret)
+					rep, _ = t.rh(ret.(proto.Message))
 				}
 			} else {
 				rep = ret.([]byte)
@@ -83,8 +82,8 @@ func (t *task) wrapHandle(ctx context.Context) <-chan struct{} {
 
 func NewTask(h func(context.Context, interface{}) (interface{}, error),
 	t bool,
-	th func([]byte) (interface{}, error),
-	rh func(interface{}) ([]byte, error),
+	th func([]byte) (proto.Message, error),
+	rh func(message proto.Message) ([]byte, error),
 ) *task {
 	return &task{
 		onTask: h,
