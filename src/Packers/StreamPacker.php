@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Al\GoSider\Packers;
 
 use Al\GoSider\Concracts\Packer;
-use Al\GoSider\Singleton;
+use Al\GoSider\Traits\Singleton;
 use Google\Protobuf\Internal\Message;
 
 class StreamPacker implements Packer
@@ -40,5 +40,10 @@ class StreamPacker implements Packer
         ];
 
         return $msg;
+    }
+
+    public function headLen(): int
+    {
+        return self::HEADLEN;
     }
 }

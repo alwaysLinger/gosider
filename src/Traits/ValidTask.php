@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Al\GoSider;
+namespace Al\GoSider\Traits;
 
 use InvalidArgumentException;
 use Stringable;

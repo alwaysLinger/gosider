@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Al\GoSider\Packers;
 
 use Al\GoSider\Concracts\Packer;
-use Al\GoSider\Singleton;
+use Al\GoSider\Traits\Singleton;
 use Closure;
 use Exception;
 use Google\Protobuf\Internal\Message;
@@ -37,7 +37,7 @@ class ProtobufPacker implements Packer
             throw new InvalidArgumentException('a task payload must be an associative array');
         }
         $message = $this->serializeTask($task);
-        
+
         return pack('NN', $task['task_id'], strlen($message)) . $message;
     }
 
@@ -106,5 +106,10 @@ class ProtobufPacker implements Packer
     public function getReply(): Message
     {
         return $this->reply = $this->reply ?? new Reply();
+    }
+
+    public function headLen(): int
+    {
+        return self::HEADLEN;
     }
 }

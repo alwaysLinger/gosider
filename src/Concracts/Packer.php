@@ -8,6 +8,8 @@ use Google\Protobuf\Internal\Message;
 
 interface Packer
 {
+    public function headLen(): int;
+
     public function serializeTask(array $task): string;
 
     public function deserializeReply(string $reply): array|Message;

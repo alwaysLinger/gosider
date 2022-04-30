@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Al\GoSider;
 
+use Al\GoSider\Traits\ValidTask;
 use ArrayObject;
 use Exception;
 
@@ -33,19 +34,60 @@ class TaskManager extends ArrayObject
         return $this->name;
     }
 
-    public function retryFailed(): self
+    public function loadFailedTasks(): null|self
     {
-        return $this->exchangeTasks($this->failed);
+        return $this->exchangeFailed();
     }
 
-    public function retryOvertimed(): self
+    /**
+     * @throws Exception
+     */
+    public function retryFailed()
     {
-        return $this->exchangeTasks($this->overtimed);
+        $this->exchangeFailed()?->send();
+    }
+
+    public function loadOvertimedTasks(): null|self
+    {
+        return $this->exchangeOvertimed();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function retryOvertimed()
+    {
+        $this->exchangeOvertimed()?->send();
+    }
+
+    private function exchangeFailed(): null|self
+    {
+        if ($this->failed->count() === 0) {
+            return null;
+        }
+
+        $this->exchangeTasks($this->failed);
+        $this->failed->exchangeArray([]);
+
+        return $this;
+    }
+
+    private function exchangeOvertimed(): null|self
+    {
+        if ($this->overtimed->count() === 0) {
+            return null;
+        }
+
+        $this->exchangeTasks($this->overtimed);
+        $this->overtimed->exchangeArray([]);
+
+        return $this;
     }
 
     private function exchangeTasks(ArrayObject $tasks): self
     {
         $this->getBus()->exchangeArray($tasks);
+
         return $this;
     }
 
@@ -54,9 +96,10 @@ class TaskManager extends ArrayObject
      */
     public function send(): void
     {
-        if (count($this->getBus()) === 0) {
+        if ($this->getBus()->count() === 0) {
             $this->exchangeTasks($this);
         }
+
         $this->getBus()->send();
     }
 

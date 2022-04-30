@@ -15,7 +15,7 @@ class Buffer
         protected Packer $packer,
     )
     {
-        $this->headLen = get_class($this->packer)::HEADLEN;
+        $this->headLen = $this->packer->headLen();
     }
 
     public function append(string $res): void
@@ -35,7 +35,7 @@ class Buffer
             return false;
         }
 
-        $msg = substr($this->buf, 8, $msgLen);
+        $msg = substr($this->buf, $this->headLen, $msgLen);
         $this->setBuf(substr($this->buf, $this->headLen + $msgLen));
 
         return $msg;
