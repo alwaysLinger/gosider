@@ -25,8 +25,8 @@ func (r *Response) Write(p []byte) (n int, err error) {
 	return r.w.Write(p)
 }
 
-func (r *Response) SetWriter(w ...io.Writer) {
-	r.w = io.MultiWriter(w...)
+func (r *Response) SetWriter(w io.Writer) {
+	r.w = w
 }
 
 func NewResponse(r []byte) *Response {

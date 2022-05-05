@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/binary"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,6 +24,7 @@ type hubOptions struct {
 	proto   bool
 	task    func([]byte) (proto.Message, error)
 	reply   func(message proto.Message) ([]byte, error)
+	w       io.Writer
 }
 
 var defaultHubOptions = hubOptions{
@@ -32,6 +34,7 @@ var defaultHubOptions = hubOptions{
 	proto:   true,
 	task:    nil,
 	reply:   nil,
+	w:       nil,
 }
 
 type HubOption interface {
@@ -60,6 +63,7 @@ type Hub struct {
 	proto   bool
 	task    func([]byte) (proto.Message, error)
 	reply   func(proto.Message) ([]byte, error)
+	w       io.Writer
 }
 
 func (h *Hub) recv() {
@@ -97,6 +101,9 @@ func (h *Hub) Start() {
 func (h *Hub) response() {
 	for {
 		res := <-h.resChan
+		if h.w != nil {
+			res.SetWriter(h.w)
+		}
 		res.Response()
 	}
 }
@@ -166,5 +173,11 @@ func CustomHubTaskHandle(h func([]byte) (proto.Message, error)) HubOption {
 func CustomHubReplyHandle(h func(proto.Message) ([]byte, error)) HubOption {
 	return newFuncHubOption(func(options *hubOptions) {
 		options.reply = h
+	})
+}
+
+func CustomRespWriters(w io.Writer) HubOption {
+	return newFuncHubOption(func(options *hubOptions) {
+		options.w = w
 	})
 }

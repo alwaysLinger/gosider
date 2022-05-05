@@ -40,6 +40,10 @@ func (t *task) Handle(ctx context.Context) (sinterface.IResponse, error) {
 func (t *task) wrapHandle(ctx context.Context) <-chan struct{} {
 	c := make(chan struct{})
 	go func() {
+		defer func() {
+			c <- struct{}{}
+		}()
+
 		var p interface{}
 		p = t.Msg
 		if t.proto {
@@ -57,9 +61,6 @@ func (t *task) wrapHandle(ctx context.Context) <-chan struct{} {
 		if err != nil {
 			t.err = err
 		} else {
-			defer func() {
-				c <- struct{}{}
-			}()
 			var rep []byte
 			if _, ok := ret.([]byte); !ok {
 				if t.rh == nil {

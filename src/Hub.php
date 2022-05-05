@@ -66,7 +66,7 @@ class Hub implements Hubber
             $this->throwException('fail callback not set');
         }
         if (is_null($this->time)) {
-            $this->throwException('fail callback not set');
+            $this->throwException('timeout callback not set');
         }
 
         $settings['packer'] ??= ProtobufPacker::class;
