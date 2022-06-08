@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Al\GoSider;
 
-use Al\GoSider\Concracts\Packer;
+use Al\GoSider\Contracts\Packer;
 use Google\Protobuf\Internal\Message;
 
 class Response

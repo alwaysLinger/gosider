@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Al\GoSider;
 
-use Al\GoSider\Concracts\Hubber;
-use Al\GoSider\Concracts\Packer;
+use Al\GoSider\Contracts\Hubber;
+use Al\GoSider\Contracts\Packer;
 use Al\GoSider\Packers\ProtobufPacker;
 use Closure;
 use Exception;

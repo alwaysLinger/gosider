@@ -13,6 +13,7 @@ trait Singleton
         if (!isset(self::$instance)) {
             self::$instance = new static(...$args);
         }
+
         return self::$instance;
     }
 }

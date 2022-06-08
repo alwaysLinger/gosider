@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Al\GoSider;
 
-use Al\GoSider\Concracts\Packer;
+use Al\GoSider\Contracts\Packer;
 use Al\GoSider\Packers\ProtobufPacker;
 use Al\GoSider\Packers\StreamPacker;
 use Google\Protobuf\Internal\Message;

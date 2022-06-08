@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Al\GoSider\Packers;
 
-use Al\GoSider\Concracts\Packer;
+use Al\GoSider\Contracts\Packer;
 use Al\GoSider\Traits\Singleton;
 use Google\Protobuf\Internal\Message;
 

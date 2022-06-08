@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Al\GoSider\Concracts;
+namespace Al\GoSider\Contracts;
 
 interface Hubber
 {

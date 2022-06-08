@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Al\GoSider;
 
-use Al\GoSider\Concracts\Hubber;
+use Al\GoSider\Contracts\Hubber;
 use Swoole\Process\Pool;
 
 class HubManager
